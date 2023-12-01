@@ -1,37 +1,3 @@
-// #include <algorithm>
-// #include <fstream>
-// #include <iostream>
-
-// using namespace std;
-
-// int main(int argc, char **argv) {
-//     if (argc != 2) {
-//         cout << "Usage: " << argv[0] << " inputfile" << endl;
-//         return (EXIT_FAILURE);
-//     }
-
-//     ifstream inputFile(argv[1]);
-
-//     if (!inputFile) {
-//         cout << "Cannot open inputfile" << endl;
-//         return (EXIT_FAILURE);
-//     }
-
-//     string line;
-//     int sum;
-//     while (getline(inputFile, line)) {
-//         auto first = find_if(line.begin(), line.end(), [](const unsigned char &c) { return isdigit(c); });
-//         auto last = find_if(line.rbegin(), line.rend(), [](const unsigned char &c) { return isdigit(c); });
-//         if (first == line.end() || last == line.rend()) {
-//             continue;
-//         }
-
-//         int num = stoi(string({first[0], last[0]}));
-//         sum += num;
-//     }
-//     cout << "Sum: " << sum << endl;
-// }
-
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -59,20 +25,34 @@ int main(int argc, char **argv) {
     }
 
     string line;
-    int sum = 0;
+    int sum_ex01 = 0;
+    int sum_ex02 = 0;
     while (getline(inputFile, line)) {
-        smatch match;
-        string first, last;
-
-        string::const_iterator searchStart(line.cbegin());
-        while (regex_search(searchStart, line.cend(), match, reg)) {
-            if (first.empty()) {
-                first = match[0];
+        {
+            auto first = find_if(line.begin(), line.end(), [](const unsigned char &c) { return isdigit(c); });
+            auto last = find_if(line.rbegin(), line.rend(), [](const unsigned char &c) { return isdigit(c); });
+            if (first != line.end() && last != line.rend()) {
+                sum_ex01 += (convert.at(string(1, first[0])) * 10) + convert.at(string(1, last[0]));
             }
-            searchStart = match.prefix().second + 1;
-            last = match[0];
         }
-        sum += (convert.at(first) * 10) + convert.at(last);
+        {
+            smatch match;
+            string first, last;
+
+            string::const_iterator searchStart(line.cbegin());
+            while (regex_search(searchStart, line.cend(), match, reg)) {
+                if (first.empty()) {
+                    first = match[0];
+                }
+                searchStart = match.prefix().second + 1;
+                last = match[0];
+            }
+            if (first.empty() || last.empty()) {
+                continue;
+            }
+            sum_ex02 += (convert.at(first) * 10) + convert.at(last);
+        }
     }
-    cout << "Sum: " << sum << endl;
+    cout << "Sum ex01: " << sum_ex01 << endl;
+    cout << "Sum ex02: " << sum_ex02 << endl;
 }
