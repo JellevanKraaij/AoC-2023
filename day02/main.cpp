@@ -20,21 +20,17 @@ gameLine parseLine(const string &line) {
     size_t pos = line.find(':');
     game.gameId = stoi(line.substr(5, pos - 5));
 
-    string colors = line.substr(pos + 2);
-    stringstream ss(colors);
+    stringstream ss(line.substr(pos + 2));
     string chunk;
-    int i = 0;
     while (getline(ss, chunk, ';')) {
-        stringstream ss2(chunk);
-        string chunk2;
-        while (getline(ss2, chunk2, ',')) {
-            stringstream ss3(chunk2);
+        stringstream ss(chunk);
+        string chunk;
+        while (getline(ss, chunk, ',')) {
             int colorValue;
             string colorName;
-            ss3 >> colorValue >> colorName;
+            stringstream(chunk) >> colorValue >> colorName;
             game.colors.push_back({{colorName, colorValue}});
         }
-        i++;
     }
     return game;
 }
@@ -53,21 +49,32 @@ int main(int argc, char **argv) {
     }
 
     string line;
-    int total = 0;
+    int total1 = 0;
+    int total2 = 0;
     while (getline(inputFile, line)) {
         bool valid = true;
         gameLine game = parseLine(line);
+        map<string, int> maxColor;
         for (auto &color : game.colors) {
             for (auto &c : color) {
                 if (gameBag[c.first] < c.second) {
                     valid = false;
                 }
+                if (maxColor[c.first] < c.second) {
+                    maxColor[c.first] = c.second;
+                }
             }
         }
         if (valid) {
             cout << "Game " << game.gameId << " is valid" << endl;
-            total += game.gameId;
+            total1 += game.gameId;
         }
+        int power = 1;
+        for (auto &c : maxColor) {
+            power *= c.second;
+        }
+        total2 += power;
     }
-    cout << "Total: " << total << endl;
+    cout << "Total1: " << total1 << endl;
+    cout << "Total2: " << total2 << endl;
 }
