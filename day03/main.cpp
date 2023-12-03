@@ -1,10 +1,11 @@
 #include <algorithm>
+#include <array>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <array>
 
 using namespace std;
 
@@ -17,16 +18,18 @@ using Element = pair<Type, int>;
 using Row = vector<Element>;
 using Map = vector<Row>;
 
-template <typename T>
-bool checkSurrounding(T &map, int i, int j, function<bool(Element)> check) {
+optional<vector<Element>> checkSurrounding(Map &map, int i, int j, function<bool(Element)> check) {
     static const array<pair<int, int>, 8> directions = {{{-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}}};
+    vector<Element> result;
     for (auto [id, jd] : directions) {
         if (i + id < 0 || i + id >= map.size() || j + jd < 0 || j + jd >= map[i].size())
             continue;
         if (check(map[i + id][j + jd]))
-            return true;
+            result.push_back(map[i + id][j + jd]);
     }
-    return false;
+    if (!result.empty())
+        return result;
+    return {};
 }
 
 int main(int argc, char **argv) {
@@ -60,7 +63,8 @@ int main(int argc, char **argv) {
         map.push_back(row);
     }
 
-    int total = 0;
+    int total1 = 0;
+    int total2 = 0;
     for (size_t i = 0; i < map.size(); ++i) {
         bool hasSymbol = false;
         int number = 0;
@@ -71,10 +75,23 @@ int main(int argc, char **argv) {
                     hasSymbol = true;
             }
             if ((j == map.size() - 1 || map[i][j].first != Type::number) && hasSymbol) {
-                total += number;
+                total1 += number;
                 hasSymbol = false;
+            }
+
+            if (map[i][j].first == Type::symbol && map[i][j].second == '*') {
+                if (auto res = checkSurrounding(map, i, j, [](Element e) { return (e.first == Type::number); })) {
+                    vector<int> unique;
+                    for (auto e : res.value()) {
+                        if (find(unique.begin(), unique.end(), e.second) == unique.end())
+                            unique.push_back(e.second);
+                    }
+                    if (unique.size() == 2)
+                        total2 += unique[0] * unique[1];
+                }
             }
         }
     }
-    cout << "Total: " << total << endl;
+    cout << "Total1: " << total1 << endl;
+    cout << "Total2: " << total2 << endl;
 }
