@@ -1,7 +1,7 @@
 #include <algorithm>
-#include <array>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -86,36 +86,30 @@ int main(int argc, char **argv) {
     }
     convertRanges.push_back(convertRange);
 
-    vector<long> seeds1 = numbers;
-    vector<long> result2;
+    long smallest1 = numeric_limits<long>::max();
+    for_each(numbers.begin(), numbers.end(), [&smallest1, convertRanges](long seed) {
+        for (ConvertRange range : convertRanges)
+            seed = range.convert(seed);
+        if (seed < smallest1)
+            smallest1 = seed;
+    });
 
+    long smallest2 = numeric_limits<long>::max();
     for (auto it = numbers.begin(); it != numbers.end(); it += 2) {
         long seedStart = *it;
         long seedLength = *(it + 1);
 
         cout << "Seed: " << seedStart << " - " << seedLength << endl;
-        std::vector<long> result_tmp;
         for (long i = 0; i < seedLength; i++) {
             long res = seedStart + i;
             for (ConvertRange range : convertRanges) {
                 res = range.convert(res);
             }
-            result_tmp.push_back(res);
+            if (res < smallest2)
+                smallest2 = res;
         }
-        long min = ranges::min(result_tmp);
-        cout << "range min: " << min << endl;
-        result2.push_back(min);
     }
 
-    cout << "Seeds1: " << seeds1.size() << endl;
-
-    vector<long> result1;
-    for_each(seeds1.begin(), seeds1.end(), [&result1, convertRanges](long seed) {
-        for (ConvertRange range : convertRanges)
-            seed = range.convert(seed);
-        result1.push_back(seed);
-    });
-
-    cout << "Part 1: " << ranges::min(result1) << endl;
-    cout << "Part 2: " << ranges::min(result2) << endl;
+    cout << "Part 1: " << smallest1 << endl;
+    cout << "Part 2: " << smallest2 << endl;
 }
