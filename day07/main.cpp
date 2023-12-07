@@ -9,16 +9,14 @@
 
 using namespace std;
 
-vector<int> parseCards(string cards) {
+const map<char, int> convertCard1 = {{'A', 14}, {'K', 13}, {'Q', 12}, {'J', 11}, {'T', 10}, {'9', 9}, {'8', 8},
+                                     {'7', 7},  {'6', 6},  {'5', 5},  {'4', 4},  {'3', 3},  {'2', 2}};
+const map<char, int> convertCard2 = {{'A', 14}, {'K', 13}, {'Q', 12}, {'J', 1}, {'T', 10}, {'9', 9}, {'8', 8},
+                                     {'7', 7},  {'6', 6},  {'5', 5},  {'4', 4}, {'3', 3},  {'2', 2}};
+vector<int> convertHand(const string &str, const map<char, int> &convert) {
     vector<int> result;
-
-    static const map<char, int> convertCard = {{'A', 14}, {'K', 13}, {'Q', 12}, {'J', 11}, {'T', 10}};
-
-    for (auto &c : cards) {
-        if (isdigit(c))
-            result.push_back(c - '0');
-        else
-            result.push_back(convertCard.at(c));
+    for (auto &c : str) {
+        result.push_back(convert.at(c));
     }
     return result;
 }
@@ -39,21 +37,19 @@ HandType getHandType(const vector<int> &cards) {
         count[c]++;
     }
 
-    if (count.size() == 1)
-        return FIVE_OF_A_KIND;
-    if (count.size() == 2) {
-        if (count.begin()->second == 1 || count.begin()->second == 4)
-            return FOUR_OF_A_KIND;
-        return FULL_HOUSE;
+    if (count.contains(1)) {
+        int jokerCount = count[1];
+        count.erase(count.find(1));
+        int largest = max_element(count.begin(), count.end(), [](auto &a, auto &b) { return a.second < b.second; })->first;
+        count[largest] += jokerCount;
     }
-    if (count.size() == 3) {
-        if (count.begin()->second == 2 || count.rbegin()->second == 2)
-            return TWO_PAIRS;
-        return THREE_OF_A_KIND;
-    }
-    if (count.size() == 4)
-        return ONE_PAIR;
-    return HIGH_CARD;
+
+    int largest = max_element(count.begin(), count.end(), [](auto &a, auto &b) { return a.second < b.second; })->second;
+    static const map<pair<int, int>, HandType> handType = {
+        {{1, 5}, FIVE_OF_A_KIND}, {{2, 4}, FOUR_OF_A_KIND}, {{2, 3}, FULL_HOUSE}, {{3, 3}, THREE_OF_A_KIND},
+        {{3, 2}, TWO_PAIRS},      {{4, 2}, ONE_PAIR},       {{5, 1}, HIGH_CARD},
+    };
+    return handType.find({count.size(), largest})->second;
 }
 
 int main(int argc, char **argv) {
@@ -70,7 +66,9 @@ int main(int argc, char **argv) {
     }
 
     string line;
-    vector<pair<vector<int>, int>> hands;
+    vector<pair<vector<int>, int>> hands1;
+    vector<pair<vector<int>, int>> hands2;
+
     while (getline(inputFile, line)) {
         stringstream ss(line);
 
@@ -79,13 +77,22 @@ int main(int argc, char **argv) {
 
         int bid;
         ss >> bid;
-        hands.push_back(make_pair(parseCards(cards), bid));
+        hands1.push_back(make_pair(convertHand(cards, convertCard1), bid));
+        hands2.push_back(make_pair(convertHand(cards, convertCard2), bid));
     }
-    sort(hands.begin(), hands.end(), [](auto &a, auto &b) { return a.first < b.first; });
 
-    long result = 0;
-    for (size_t i = 0; i < hands.size(); i++) {
-        result += hands[i].second * (i + 1);
+    for_each(hands1.begin(), hands1.end(), [](auto &hand) { hand.first.insert(hand.first.begin(), getHandType(hand.first)); });
+    for_each(hands2.begin(), hands2.end(), [](auto &hand) { hand.first.insert(hand.first.begin(), getHandType(hand.first)); });
+
+    sort(hands1.begin(), hands1.end(), [](auto &a, auto &b) { return a.first < b.first; });
+    sort(hands2.begin(), hands2.end(), [](auto &a, auto &b) { return a.first < b.first; });
+
+    long result1 = 0;
+    long result2 = 0;
+    for (size_t i = 0; i < min(hands1.size(), hands2.size()); i++) {
+        result1 += hands1[i].second * (i + 1);
+        result2 += hands2[i].second * (i + 1);
     }
-    cout << "Result: " << result << endl;
+    cout << "Result: " << result1 << endl;
+    cout << "Result: " << result2 << endl;
 }
